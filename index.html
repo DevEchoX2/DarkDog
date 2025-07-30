@@ -62,6 +62,7 @@
       align-items: center;
       background-color: #1a1a1a;
       padding: 8px;
+      position: relative;
     }
 
     .button {
@@ -84,6 +85,48 @@
       color: white;
     }
 
+    .menu-button {
+      font-size: 20px;
+      padding: 4px 8px;
+      background: #222;
+      border: 1px solid red;
+      border-radius: 6px;
+      color: red;
+      margin-left: 6px;
+    }
+
+    .menu-dropdown {
+      position: absolute;
+      right: 16px;
+      top: 56px;
+      background: #111;
+      border: 1px solid red;
+      border-radius: 6px;
+      color: white;
+      min-width: 140px;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .menu-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #333;
+    }
+
+    .menu-item:last-child {
+      border-bottom: none;
+    }
+
+    .menu-item:hover {
+      background: #222;
+    }
+
+    .hidden {
+      display: none;
+    }
+
     iframe {
       width: 100%;
       height: calc(100vh - 96px);
@@ -103,6 +146,12 @@
     <button class="button" id="reloadBtn">⟳</button>
     <button class="button" id="homeBtn">Home</button>
     <input class="address-bar" id="addressBar" placeholder="Search or enter URL…" />
+    <button class="menu-button" id="menuButton">⋮</button>
+    <div id="menuDropdown" class="menu-dropdown hidden">
+      <div class="menu-item">New Tab</div>
+      <div class="menu-item">Bookmarks</div>
+      <div class="menu-item">Settings</div>
+    </div>
   </div>
 
   <iframe id="browserFrame"></iframe>
@@ -116,6 +165,8 @@
     const forwardBtn = document.getElementById("forwardBtn");
     const reloadBtn = document.getElementById("reloadBtn");
     const homeBtn = document.getElementById("homeBtn");
+    const menuBtn = document.getElementById("menuButton");
+    const dropdown = document.getElementById("menuDropdown");
 
     let tabs = [];
     let activeTabIndex = -1;
@@ -213,7 +264,26 @@
 
     addTabBtn.addEventListener("click", () => createTab());
 
-    createTab(); // Launch with one clean tab
+    menuBtn.onclick = () => {
+      dropdown.classList.toggle("hidden");
+    };
+
+    document.addEventListener("click", e => {
+      if (!menuBtn.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.add("hidden");
+      }
+    });
+
+    dropdown.querySelectorAll(".menu-item").forEach(item => {
+      item.onclick = () => {
+        const text = item.textContent;
+        if (text === "New Tab") createTab();
+        else alert(`${text} clicked`);
+        dropdown.classList.add("hidden");
+      };
+    });
+
+    createTab();
   </script>
 </body>
 </html>
