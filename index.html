@@ -30,7 +30,6 @@
       border-radius: 6px 6px 0 0;
       cursor: pointer;
       font-weight: bold;
-      position: relative;
     }
 
     .tab.active {
@@ -103,7 +102,7 @@
     <button class="button" id="forwardBtn">▶</button>
     <button class="button" id="reloadBtn">⟳</button>
     <button class="button" id="homeBtn">Home</button>
-    <input class="address-bar" id="addressBar" placeholder="Enter URL…" />
+    <input class="address-bar" id="addressBar" placeholder="Search or enter URL…" />
   </div>
 
   <iframe id="browserFrame"></iframe>
@@ -151,13 +150,22 @@
       frame.src = tabData.url;
     }
 
-    function navigate(url) {
-      const formatted = url.startsWith("http") ? url : "https://" + url;
+    function isValidUrl(str) {
+      return str.startsWith("http://") || str.startsWith("https://");
+    }
+
+    function navigate(input) {
+      const trimmed = input.trim();
+      const target = isValidUrl(trimmed)
+        ? trimmed
+        : "https://duckduckgo.com/?q=" + encodeURIComponent(trimmed);
+
       const tab = tabs[activeTabIndex];
       tab.history = tab.history.slice(0, tab.index + 1);
-      tab.history.push(formatted);
+      tab.history.push(target);
       tab.index++;
-      tab.url = formatted;
+      tab.url = target;
+
       switchTab(activeTabIndex);
     }
 
@@ -174,7 +182,7 @@
     }
 
     addressBar.addEventListener("keypress", e => {
-      if (e.key === "Enter") navigate(addressBar.value.trim());
+      if (e.key === "Enter") navigate(addressBar.value);
     });
 
     backBtn.addEventListener("click", () => {
@@ -200,12 +208,12 @@
     });
 
     homeBtn.addEventListener("click", () => {
-      navigate("https://example.com");
+      navigate("https://duckduckgo.com");
     });
 
     addTabBtn.addEventListener("click", () => createTab());
 
-    createTab(); // Load one starter tab
+    createTab(); // Launch with one clean tab
   </script>
 </body>
 </html>
