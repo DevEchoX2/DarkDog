@@ -4,245 +4,208 @@
   <meta charset="UTF-8" />
   <title>DarkDog Browser</title>
   <style>
-    * { box-sizing: border-box; }
-
-    html, body {
+    body {
       margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      background-color: #0e0e0e;
       font-family: 'Segoe UI', sans-serif;
+      background: #0b0b0b;
       color: white;
     }
 
-    .browser {
+    .tab-bar {
       display: flex;
-      flex-direction: column;
-      height: 100%;
-      width: 100%;
-      background-color: #1a1a1a;
-    }
-
-    .top-bar {
-      background-color: #111;
-      padding: 10px;
-      display: flex;
-      gap: 10px;
       align-items: center;
+      background: #111;
+      padding: 6px;
       border-bottom: 2px solid red;
     }
 
-    .btn {
-      background-color: #2a2a2a;
-      color: #ff2e2e;
-      border: none;
-      padding: 6px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-
-    .url-bar {
-      flex: 1;
-      padding: 8px 12px;
-      border-radius: 6px;
-      background-color: #222;
-      border: 1px solid red;
-      color: #eee;
-      font-size: 0.9em;
-    }
-
-    .tabs-container {
+    .tab {
       display: flex;
       align-items: center;
-      background-color: #191919;
-      padding: 10px;
-      border-bottom: 1px solid #333;
-    }
-
-    .tabs {
-      display: flex;
-      flex-grow: 1;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .tab {
-      background-color: #222;
-      color: #ccc;
+      background: #222;
+      border: 1px solid red;
       padding: 6px 10px;
-      border-radius: 6px;
-      position: relative;
+      margin-right: 6px;
+      color: red;
+      border-radius: 6px 6px 0 0;
       cursor: pointer;
+      font-weight: bold;
+      position: relative;
     }
 
     .tab.active {
-      background-color: #ff2e2e;
-      color: #fff;
+      background: #000;
+      color: white;
+      border-bottom: none;
     }
 
-    .close {
+    .tab .close {
       margin-left: 8px;
-      color: #aaa;
+      color: red;
+      background: transparent;
+      border: none;
+      font-weight: bold;
       cursor: pointer;
     }
 
     .new-tab {
-      background-color: #333;
-      color: #fff;
-      border: none;
-      padding: 6px 10px;
+      background: #222;
+      color: red;
+      padding: 6px 12px;
+      border: 2px dashed red;
       border-radius: 6px;
       cursor: pointer;
+      font-weight: bold;
     }
 
-    .tab-content {
+    .top-bar {
+      display: flex;
+      align-items: center;
+      background-color: #1a1a1a;
+      padding: 8px;
+    }
+
+    .button {
+      background: #2a2a2a;
+      color: #ff0000;
+      border: none;
+      padding: 6px 10px;
+      margin-right: 6px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .address-bar {
       flex-grow: 1;
-      position: relative;
-      overflow: hidden;
+      padding: 8px;
+      background: #222;
+      border: 1px solid red;
+      border-radius: 6px;
+      color: white;
     }
 
     iframe {
       width: 100%;
-      height: 100%;
+      height: calc(100vh - 96px);
       border: none;
+      background: #1c1c1c;
     }
   </style>
 </head>
 <body>
-  <div class="browser">
-    <div class="top-bar">
-      <button class="btn back">&#8678;</button>
-      <button class="btn reload">&#8635;</button>
-      <button class="btn forward">&#8680;</button>
-      <input type="text" class="url-bar" placeholder="https://darkdog.dev" />
-    </div>
-
-    <div class="tabs-container">
-      <div class="tabs"></div>
-      <button class="new-tab">+</button>
-    </div>
-
-    <div class="tab-content"></div>
+  <div class="tab-bar" id="tabBar">
+    <button class="new-tab" id="addTab">+</button>
   </div>
 
+  <div class="top-bar">
+    <button class="button" id="backBtn">◀</button>
+    <button class="button" id="forwardBtn">▶</button>
+    <button class="button" id="reloadBtn">⟳</button>
+    <button class="button" id="homeBtn">Home</button>
+    <input class="address-bar" id="addressBar" placeholder="Enter URL…" />
+  </div>
+
+  <iframe id="browserFrame"></iframe>
+
   <script>
-    let tabs = document.querySelector('.tabs');
-    let tabContent = document.querySelector('.tab-content');
-    let urlBar = document.querySelector('.url-bar');
-    let backBtn = document.querySelector('.back');
-    let forwardBtn = document.querySelector('.forward');
-    let reloadBtn = document.querySelector('.reload');
+    const tabBar = document.getElementById("tabBar");
+    const addressBar = document.getElementById("addressBar");
+    const frame = document.getElementById("browserFrame");
+    const addTabBtn = document.getElementById("addTab");
+    const backBtn = document.getElementById("backBtn");
+    const forwardBtn = document.getElementById("forwardBtn");
+    const reloadBtn = document.getElementById("reloadBtn");
+    const homeBtn = document.getElementById("homeBtn");
 
-    let tabId = 0;
-    let tabState = {};
+    let tabs = [];
+    let activeTabIndex = -1;
 
-    function createTab(initialURL = 'https://darkdog.dev') {
-      const id = `tab-${++tabId}`;
-      const tab = document.createElement('div');
-      tab.className = 'tab active';
-      tab.dataset.id = id;
-      tab.innerHTML = `Tab ${tabId} <span class="close">×</span>`;
-      tabs.appendChild(tab);
+    function createTab(url = "") {
+      const tabIndex = tabs.length;
+      tabs.push({ url, history: [url], index: 0 });
 
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
+      const tab = document.createElement("div");
+      tab.className = "tab";
+      tab.innerHTML = `<span>${url || "New Tab"}</span><button class="close">×</button>`;
+      tabBar.insertBefore(tab, addTabBtn);
 
-      const iframe = document.createElement('iframe');
-      iframe.dataset.id = id;
-      iframe.src = initialURL;
-      tabContent.innerHTML = '';
-      tabContent.appendChild(iframe);
-      urlBar.value = initialURL;
-
-      tabState[id] = {
-        iframe,
-        history: [initialURL],
-        index: 0
+      tab.onclick = () => switchTab(tabIndex);
+      tab.querySelector(".close").onclick = (e) => {
+        e.stopPropagation();
+        removeTab(tabIndex);
       };
 
-      tab.querySelector('.close').onclick = () => closeTab(id);
-      tab.onclick = () => switchTab(id);
+      switchTab(tabIndex);
     }
 
-    function closeTab(id) {
-      delete tabState[id];
-      document.querySelector(`.tab[data-id="${id}"]`)?.remove();
-      let remaining = document.querySelectorAll('.tab');
-      if (remaining.length > 0) {
-        switchTab(remaining[remaining.length - 1].dataset.id);
+    function switchTab(i) {
+      document.querySelectorAll(".tab").forEach((tab, idx) => {
+        tab.classList.toggle("active", idx === i);
+        tab.querySelector("span").textContent = tabs[idx].url || "New Tab";
+      });
+
+      activeTabIndex = i;
+      const tabData = tabs[i];
+      addressBar.value = tabData.url;
+      frame.src = tabData.url;
+    }
+
+    function navigate(url) {
+      const formatted = url.startsWith("http") ? url : "https://" + url;
+      const tab = tabs[activeTabIndex];
+      tab.history = tab.history.slice(0, tab.index + 1);
+      tab.history.push(formatted);
+      tab.index++;
+      tab.url = formatted;
+      switchTab(activeTabIndex);
+    }
+
+    function removeTab(i) {
+      tabs.splice(i, 1);
+      tabBar.removeChild(tabBar.children[i]);
+      if (tabs.length === 0) {
+        frame.src = "";
+        addressBar.value = "";
+        activeTabIndex = -1;
       } else {
-        tabContent.innerHTML = '';
-        urlBar.value = '';
+        switchTab(Math.max(0, i - 1));
       }
     }
 
-    function switchTab(id) {
-      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.id === id));
-      let state = tabState[id];
-      if (state) {
-        tabContent.innerHTML = '';
-        tabContent.appendChild(state.iframe);
-        urlBar.value = state.history[state.index];
-      }
-    }
+    addressBar.addEventListener("keypress", e => {
+      if (e.key === "Enter") navigate(addressBar.value.trim());
+    });
 
-    function updateURL(id, url) {
-      let state = tabState[id];
-      if (state) {
-        state.history = state.history.slice(0, state.index + 1);
-        state.history.push(url);
-        state.index++;
-        state.iframe.src = url;
-        urlBar.value = url;
-      }
-    }
-
-    function getActiveTabId() {
-      return document.querySelector('.tab.active')?.dataset.id;
-    }
-
-    urlBar.addEventListener('keypress', e => {
-      if (e.key === 'Enter') {
-        let id = getActiveTabId();
-        if (!/^https?:\/\//.test(urlBar.value)) {
-          urlBar.value = 'https://' + urlBar.value;
-        }
-        updateURL(id, urlBar.value);
+    backBtn.addEventListener("click", () => {
+      const tab = tabs[activeTabIndex];
+      if (tab.index > 0) {
+        tab.index--;
+        tab.url = tab.history[tab.index];
+        switchTab(activeTabIndex);
       }
     });
 
-    backBtn.onclick = () => {
-      let id = getActiveTabId();
-      let state = tabState[id];
-      if (state && state.index > 0) {
-        state.index--;
-        state.iframe.src = state.history[state.index];
-        urlBar.value = state.history[state.index];
+    forwardBtn.addEventListener("click", () => {
+      const tab = tabs[activeTabIndex];
+      if (tab.index < tab.history.length - 1) {
+        tab.index++;
+        tab.url = tab.history[tab.index];
+        switchTab(activeTabIndex);
       }
-    };
+    });
 
-    forwardBtn.onclick = () => {
-      let id = getActiveTabId();
-      let state = tabState[id];
-      if (state && state.index < state.history.length - 1) {
-        state.index++;
-        state.iframe.src = state.history[state.index];
-        urlBar.value = state.history[state.index];
-      }
-    };
+    reloadBtn.addEventListener("click", () => {
+      frame.src = tabs[activeTabIndex].url;
+    });
 
-    reloadBtn.onclick = () => {
-      let id = getActiveTabId();
-      let state = tabState[id];
-      if (state) {
-        state.iframe.src = state.history[state.index];
-      }
-    };
+    homeBtn.addEventListener("click", () => {
+      navigate("https://example.com");
+    });
 
-    document.querySelector('.new-tab').onclick = () => createTab();
-    window.onload = () => createTab();
+    addTabBtn.addEventListener("click", () => createTab());
+
+    createTab(); // Load one starter tab
   </script>
 </body>
 </html>
