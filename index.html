@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>DarkDog Browser</title>
   <style>
-    /* (unchanged styles—same bold look) */
     body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #0b0b0b; color: white; }
     .tab-bar { display: flex; align-items: center; background: #111; padding: 6px; border-bottom: 2px solid red; }
     .tab { display: flex; align-items: center; background: #222; border: 1px solid red; padding: 6px 10px; margin-right: 6px; color: red; border-radius: 6px 6px 0 0; cursor: pointer; font-weight: bold; }
@@ -36,9 +35,10 @@
     <input class="address-bar" id="addressBar" placeholder="Search or enter URL…" />
     <button class="menu-button" id="menuButton">⋮</button>
     <div id="menuDropdown" class="menu-dropdown hidden">
-      <div class="menu-item">New Tab</div>
-      <div class="menu-item">Bookmarks</div>
-      <div class="menu-item">Settings</div>
+      <div class="menu-item" data-action="new">New Tab</div>
+      <div class="menu-item" data-action="bookmarks">Bookmarks</div>
+      <div class="menu-item" data-action="settings">Settings</div>
+      <div class="menu-item" data-action="admin">Admin Panel</div>
     </div>
   </div>
 
@@ -164,9 +164,9 @@
 
     dropdown.querySelectorAll(".menu-item").forEach(item => {
       item.onclick = () => {
-        const text = item.textContent;
-        if (text === "New Tab") createTab();
-        else alert(`${text} clicked`);
+        const action = item.getAttribute("data-action");
+        if (action === "new") createTab();
+        else alert(`${item.textContent} clicked`);
         dropdown.classList.add("hidden");
       };
     });
